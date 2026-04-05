@@ -13,6 +13,10 @@ export default defineNuxtConfig({
         lang: 'en',
       },
       meta: [
+        {
+          name: 'viewport',
+          content: 'width=device-width, initial-scale=1, viewport-fit=cover',
+        },
         { name: 'description', content: SITE_DESCRIPTION },
         { name: 'application-name', content: 'Life Radius' },
         { name: 'author', content: 'Life Radius' },

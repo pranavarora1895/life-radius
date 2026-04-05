@@ -1,6 +1,6 @@
 # Life Radius
 
-A [Nuxt 3](https://nuxt.com/) app that scores how well a **candidate home** works with your **work** and **school** locations. Pick places on the map or search by address, choose a travel mode (driving, walking, cycling, transit), and compare up to three scenarios side by side.
+A [Nuxt 3](https://nuxt.com/) app that scores how well a **candidate home** works with your **work** and **school** locations. Pick places on the map or search by address, choose a travel mode (driving, walking, cycling, transit), and compare up to three plans side by side.
 
 Maps and routing use **Mapbox**. An optional **Google Maps** API key enables richer transit overlays and walk-vs-transit comparison in transit mode.
 
@@ -8,7 +8,7 @@ Maps and routing use **Mapbox**. An optional **Google Maps** API key enables ric
 
 - Interactive **Mapbox GL** map with home, work, and school placement
 - **Life score** from commute routes, nearby POIs, and trip-frequency modeling
-- Multiple **scenarios** with labels and a **compare** view
+- Multiple **plans** with labels and a **compare** view
 - Optional **traffic** and **transit** layers where supported
 
 ## Tech stack

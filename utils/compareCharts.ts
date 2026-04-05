@@ -1,4 +1,4 @@
-import type { AnchorCategory, GroceryCompareLeg, ScenarioCompareSnapshot } from '~/types'
+import type { AnchorCategory, GroceryCompareLeg, PlanCompareSnapshot } from '~/types'
 import { categoryDisplayName } from '~/utils/scoreExplain'
 
 /** Hex fills for donut / radar (matches dashboard category colors). */
@@ -22,7 +22,7 @@ export type BurdenSlice = {
 }
 
 /** Slices for donut: share of total burden each place type contributes. */
-export function burdenSlicesForSnapshot(sn: ScenarioCompareSnapshot): BurdenSlice[] {
+export function burdenSlicesForSnapshot(sn: PlanCompareSnapshot): BurdenSlice[] {
   const t = sn.totalBurden
   if (t <= 0) return []
   const rows = sn.byCategory.filter((r) => r.weightedSum > 0 && r.legCount > 0)

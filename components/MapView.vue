@@ -34,7 +34,7 @@ const props = withDefaults(
     travelMode: TravelMode
     routeOverlays?: RouteOverlay[] | null
     showTrafficLayer?: boolean
-    /** Rail, light rail, and ferry lines (Mapbox Streets / OSM). */
+    /** Rail, light rail, and ferry lines on the basemap. */
     showTransitLayer?: boolean
     /** When true, map is pan/zoom only (no click-to-set-home). */
     readOnly?: boolean
@@ -42,6 +42,11 @@ const props = withDefaults(
     placedSlots?: MapPlacedSlots
     /** Tooltip / accessible name for the home marker (e.g. formatted address). */
     homeMarkerHint?: string | null
+    /**
+     * Plan tab on narrow viewports: a fixed tab bar sits over the map. Offset the legend so
+     * “Road traffic” stays visible (otherwise the top of the card sits under z-50 chrome).
+     */
+    underFixedTopUi?: boolean
   }>(),
   {
     routeOverlays: null,
@@ -50,6 +55,7 @@ const props = withDefaults(
     readOnly: false,
     placedSlots: () => ({ home: false, work: false, school: false }),
     homeMarkerHint: null,
+    underFixedTopUi: false,
   },
 )
 
@@ -68,9 +74,8 @@ const legendRouteItems = computed(() => {
   return out
 })
 
-const trafficLegendVisible = computed(
-  () => props.travelMode === 'driving' && props.showTrafficLayer,
-)
+/** Show whenever the user enables traffic — not only in Driving (map overlay is Driving-only). */
+const trafficLegendVisible = computed(() => props.showTrafficLayer)
 
 const transitLegendVisible = computed(() => props.showTransitLayer)
 
@@ -114,6 +119,17 @@ const emit = defineEmits<{
 const wrapperRef = ref<HTMLDivElement | null>(null)
 const mapboxContainerRef = ref<HTMLDivElement | null>(null)
 const pickPrompt = ref<PickPromptState | null>(null)
+/** Narrow viewports need smaller fitBounds padding so routes stay visible without excessive zoom-out. */
+const narrowScreen = ref(false)
+
+function updateNarrowScreen() {
+  if (typeof window === 'undefined') return
+  narrowScreen.value = window.matchMedia('(max-width: 639px)').matches
+}
+
+function boundsFitPadding(): number {
+  return narrowScreen.value ? 22 : 48
+}
 let map: mapboxgl.Map | null = null
 let containerResizeObserver: ResizeObserver | null = null
 const homeMarker = ref<mapboxgl.Marker | null>(null)
@@ -169,7 +185,7 @@ function addTrafficLayers(m: mapboxgl.Map) {
       paint: {
         'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1.2, 12, 2.5, 14, 4, 17, 7],
         /**
-         * Mapbox Traffic `congestion`: low | moderate | heavy | severe. Unknown / missing uses a
+         * Traffic `congestion`: low | moderate | heavy | severe. Unknown / missing uses a
          * neutral slate so “clear” roads (low) read greener vs “no data”.
          */
         'line-color': [
@@ -442,7 +458,7 @@ function layoutPickPrompt(pt: { x: number; y: number }): { left: number; top: nu
   const el = wrapperRef.value
   const cw = el?.clientWidth ?? 0
   const ch = el?.clientHeight ?? 0
-  const panelW = 200
+  const panelW = Math.min(200, Math.max(160, cw - 20))
   const panelH = 132
   const pad = 10
   const offsetY = 14
@@ -501,25 +517,34 @@ function syncHomeMarker() {
 onMounted(async () => {
   await nextTick()
   if (!mapboxContainerRef.value || !props.mapboxToken) return
+  updateNarrowScreen()
   setAccessToken()
   const initial = boundsFromAnchors()
   const initialStyle = 'mapbox://styles/mapbox/streets-v12' as const
+  const mapOptions = {
+    container: mapboxContainerRef.value,
+    style: initialStyle,
+    /** Keeps the map 2D on touch: no accidental pitch/rotate while panning. */
+    touchPitchRotate: false,
+    dragRotate: false,
+  } as const
   if (initial) {
     map = new mapboxgl.Map({
-      container: mapboxContainerRef.value,
-      style: initialStyle,
+      ...mapOptions,
       bounds: initial,
-      fitBoundsOptions: { padding: 48, maxZoom: 13 },
+      fitBoundsOptions: { padding: boundsFitPadding(), maxZoom: 13 },
     })
   } else {
     map = new mapboxgl.Map({
-      container: mapboxContainerRef.value,
-      style: initialStyle,
+      ...mapOptions,
       center: [DEFAULT_MAP_CENTER.lng, DEFAULT_MAP_CENTER.lat],
       zoom: DEFAULT_MAP_ZOOM,
     })
   }
-  map.addControl(new mapboxgl.NavigationControl(), 'top-right')
+  map.addControl(
+    new mapboxgl.NavigationControl({ showCompass: false, visualizePitch: false }),
+    'top-right',
+  )
   map.on('click', (e) => {
     selectedAnchorId.value = null
     refreshAllAnchorMarkerDom()
@@ -535,6 +560,7 @@ onMounted(async () => {
     syncHomeMarker()
   })
   onResize = () => {
+    updateNarrowScreen()
     map?.resize()
   }
   window.addEventListener('resize', onResize)
@@ -553,7 +579,7 @@ watch(
     syncAnchorMarkers()
     if (map && props.anchors.length) {
       const b = boundsFromAnchors()
-      if (b) map.fitBounds(b, { padding: 48, maxZoom: 13 })
+      if (b) map.fitBounds(b, { padding: boundsFitPadding(), maxZoom: 13 })
     }
   },
   { deep: true },
@@ -595,7 +621,11 @@ watch(
       const b = boundsFromAnchors()
       if (b && props.candidateHome) {
         extendBoundsWithRoutes(b)
-        map.fitBounds(b, { padding: 56, maxZoom: 14, duration: 600 })
+        map.fitBounds(b, {
+          padding: narrowScreen.value ? 28 : 56,
+          maxZoom: 14,
+          duration: 600,
+        })
       }
     }
   },
@@ -621,7 +651,9 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  if (typeof window !== 'undefined') window.removeEventListener('keydown', onEscapeKey)
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', onEscapeKey)
+  }
   containerResizeObserver?.disconnect()
   containerResizeObserver = null
   if (onResize) window.removeEventListener('resize', onResize)
@@ -639,19 +671,18 @@ onBeforeUnmount(() => {
     <ClientOnly>
       <div v-if="!mapboxToken" class="flex h-full min-h-[200px] flex-col items-center justify-center gap-2 p-6 text-center text-sm text-slate-400">
         <Icon name="lucide:map-pin-off" class="size-10 text-cyan-500/40" aria-hidden="true" />
-        <p class="font-medium text-slate-200">Mapbox token required</p>
+        <p class="font-medium text-slate-200">Map couldn’t load</p>
         <p class="max-w-sm text-slate-500">
-          Create a <code class="rounded bg-slate-800 px-1 py-0.5 text-xs text-cyan-200/80">.env</code> file with
-          <code class="rounded bg-slate-800 px-1 py-0.5 text-xs text-cyan-200/80">NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN</code>
-          and restart the dev server.
+          Refresh the page or try again in a moment. If this keeps happening, the person who published this app may need
+          to finish map setup.
         </p>
       </div>
-      <div v-else ref="wrapperRef" class="absolute inset-0 h-full w-full">
+      <div v-else ref="wrapperRef" class="absolute inset-0 h-full w-full touch-manipulation">
         <div ref="mapboxContainerRef" class="absolute inset-0 h-full w-full" />
       </div>
       <div
         v-if="pickPrompt && mapboxToken && !readOnly"
-        class="pointer-events-auto absolute z-20 w-[200px] rounded-lg border border-cyan-500/30 bg-slate-900/95 p-2.5 shadow-xl shadow-black/50 backdrop-blur-md"
+        class="pointer-events-auto absolute z-20 min-w-0 max-w-[min(200px,calc(100vw-2.5rem))] rounded-lg border border-cyan-500/30 bg-slate-900/95 p-2.5 shadow-xl shadow-black/50 backdrop-blur-md"
         role="dialog"
         aria-label="Choose place type"
         :style="{ left: `${pickPrompt.left}px`, top: `${pickPrompt.top}px` }"
@@ -701,110 +732,153 @@ onBeforeUnmount(() => {
     </ClientOnly>
     <div
       v-if="mapboxToken && showMapOverlays"
-      class="pointer-events-none absolute left-2 top-2 z-10 flex max-w-[min(100%,15rem)] flex-col gap-2"
+      class="pointer-events-none absolute left-1 z-30 flex w-[min(100%,calc(100vw-0.5rem),16rem)] flex-col gap-1.5 sm:left-2 sm:max-w-[min(100%,calc(100vw-1rem),18rem)] sm:gap-2"
+      :class="
+        underFixedTopUi
+          ? 'top-1 max-lg:top-[calc(env(safe-area-inset-top)+8.5rem)] lg:top-2'
+          : 'top-1 sm:top-2'
+      "
     >
       <div
         v-if="showColorKey"
-        class="rounded-lg border border-cyan-500/25 bg-slate-900/90 px-2.5 py-2 text-left shadow-lg shadow-black/30 backdrop-blur-md"
+        class="pointer-events-auto rounded-lg border border-cyan-500/25 bg-slate-900/95 px-2 py-1.5 text-left shadow-lg shadow-black/30 backdrop-blur-md sm:px-2.5 sm:py-2"
       >
-        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+        <p class="text-[9px] font-semibold uppercase tracking-wide text-slate-500 sm:text-[10px]">
           Color key
         </p>
-        <div v-if="legendRouteItems.length" class="mt-1.5 space-y-1">
-          <p class="text-[10px] text-slate-500">Routes (home → stop)</p>
+        <!-- Traffic first so it stays visible when route list is long -->
+        <div
+          v-if="trafficLegendVisible"
+          class="mt-1 border-t border-slate-700 pt-1 sm:mt-1.5 sm:pt-1.5"
+        >
+          <p class="text-[9px] font-semibold text-slate-200 sm:text-[10px]">Road traffic (congestion)</p>
+          <p
+            v-if="travelMode !== 'driving'"
+            class="mt-0.5 text-[8px] leading-snug text-amber-200/90 sm:text-[9px]"
+          >
+            Colored roads appear on the map in <span class="font-medium">Driving</span> mode (overlay is off for walk / bike / transit).
+          </p>
+          <div
+            class="mt-1 grid grid-cols-1 gap-y-0.5 text-[9px] text-slate-200 sm:grid-cols-2 sm:gap-x-2 sm:gap-y-1 sm:text-[10px]"
+          >
+            <span class="flex min-w-0 items-center gap-1.5">
+              <span aria-hidden="true" class="inline-block h-2 w-4 shrink-0 rounded-sm bg-green-500" />
+              <span class="min-w-0">Low</span>
+            </span>
+            <span class="flex min-w-0 items-center gap-1.5">
+              <span aria-hidden="true" class="inline-block h-2 w-4 shrink-0 rounded-sm bg-yellow-500" />
+              <span class="min-w-0">Moderate</span>
+            </span>
+            <span class="flex min-w-0 items-center gap-1.5">
+              <span aria-hidden="true" class="inline-block h-2 w-4 shrink-0 rounded-sm bg-orange-500" />
+              <span class="min-w-0">Heavy</span>
+            </span>
+            <span class="flex min-w-0 items-center gap-1.5">
+              <span aria-hidden="true" class="inline-block h-2 w-4 shrink-0 rounded-sm bg-red-600" />
+              <span class="min-w-0">Severe</span>
+            </span>
+            <span class="flex min-w-0 items-center gap-1.5 text-slate-400 sm:col-span-2">
+              <span aria-hidden="true" class="inline-block h-2 w-4 shrink-0 rounded-sm bg-zinc-400" />
+              <span class="min-w-0">No data / other</span>
+            </span>
+          </div>
+        </div>
+        <div
+          v-if="legendRouteItems.length"
+          class="mt-1.5 space-y-0.5 border-t border-slate-700 pt-1.5 sm:mt-2 sm:space-y-1 sm:pt-2"
+        >
+          <p class="text-[9px] text-slate-500 sm:text-[10px]">
+            <span class="sm:hidden">Routes</span>
+            <span class="hidden sm:inline">Routes (home → stop)</span>
+          </p>
           <div
             v-for="item in legendRouteItems"
             :key="item.label"
-            class="flex items-center gap-2"
+            class="flex min-w-0 items-center gap-2"
           >
             <span
               class="h-2.5 w-6 shrink-0 rounded-sm shadow-sm ring-1 ring-black/10"
               :style="{ backgroundColor: item.color }"
             />
-            <span class="text-[11px] font-medium text-slate-100">{{ item.label }}</span>
-          </div>
-        </div>
-        <div
-          v-if="trafficLegendVisible"
-          class="mt-2 border-t border-slate-700 pt-2"
-        >
-          <p class="text-[10px] text-slate-500">Road traffic</p>
-          <div class="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-slate-300">
-            <span class="flex items-center gap-1.5"><span aria-hidden="true" class="inline-block h-2 w-4 rounded-sm bg-green-500" /> Low</span>
-            <span class="flex items-center gap-1.5"><span aria-hidden="true" class="inline-block h-2 w-4 rounded-sm bg-yellow-500" /> Moderate</span>
-            <span class="flex items-center gap-1.5"><span aria-hidden="true" class="inline-block h-2 w-4 rounded-sm bg-orange-500" /> Heavy</span>
-            <span class="flex items-center gap-1.5"><span aria-hidden="true" class="inline-block h-2 w-4 rounded-sm bg-red-600" /> Severe</span>
-            <span class="col-span-2 flex items-center gap-1.5 text-slate-500">
-              <span aria-hidden="true" class="inline-block h-2 w-4 rounded-sm bg-zinc-400" /> No data / other
-            </span>
+            <span class="min-w-0 break-words text-[10px] font-medium leading-snug text-slate-100 sm:text-[11px]">{{ item.label }}</span>
           </div>
         </div>
         <div
           v-if="transitLegendVisible"
-          class="mt-2 border-t border-slate-700 pt-2"
+          class="mt-1.5 border-t border-slate-700 pt-1.5 sm:mt-2 sm:pt-2"
         >
-          <p class="text-[10px] text-slate-500">Public transit (map)</p>
-          <p class="mt-0.5 text-[9px] leading-snug text-slate-600">
-            OpenStreetMap via Mapbox: rail, ferry, bus-only lanes, and bus stop points — not every street bus line; not live
-            vehicles. Pins and routes draw on top.
+          <p class="text-[9px] text-slate-500 sm:text-[10px]">Transit lines</p>
+          <p
+            class="mt-0.5 text-[8px] leading-tight text-slate-500 sm:text-[9px]"
+            title="Rail, ferries, bus lanes, and major stops—not every local bus route, and not live vehicle positions. Your pins and routes draw on top."
+          >
+            Guide only · not every line · not live vehicles
           </p>
-          <div class="mt-1 space-y-1 text-[10px] text-slate-300">
+          <div class="mt-1 space-y-0.5 text-[9px] text-slate-300 sm:space-y-1 sm:text-[10px]">
             <span class="flex items-center gap-1.5">
-              <span aria-hidden="true" class="inline-block h-2 w-4 rounded-sm bg-indigo-400" /> Heavy / commuter rail
+              <span aria-hidden="true" class="inline-block h-2 w-4 shrink-0 rounded-sm bg-indigo-400" />
+              <span class="leading-tight">Commuter rail</span>
             </span>
             <span class="flex items-center gap-1.5">
-              <span aria-hidden="true" class="inline-block h-2 w-4 rounded-sm bg-violet-300" /> Light rail &amp; tram
+              <span aria-hidden="true" class="inline-block h-2 w-4 shrink-0 rounded-sm bg-violet-300" />
+              <span class="leading-tight">Light rail</span>
             </span>
             <span class="flex items-center gap-1.5">
               <span
                 aria-hidden="true"
-                class="inline-block h-2 w-4 rounded-sm border border-dashed border-cyan-400/90 bg-cyan-950/50"
-              /> Ferry
+                class="inline-block h-2 w-4 shrink-0 rounded-sm border border-dashed border-cyan-400/90 bg-cyan-950/50"
+              />
+              Ferry
             </span>
             <span class="flex items-center gap-1.5">
-              <span aria-hidden="true" class="inline-block h-2 w-4 rounded-sm bg-amber-400" /> Bus lanes (guideway)
+              <span aria-hidden="true" class="inline-block h-2 w-4 shrink-0 rounded-sm bg-amber-400" />
+              <span class="leading-tight">Bus lanes</span>
             </span>
             <span class="flex items-center gap-1.5">
-              <span aria-hidden="true" class="inline-block size-2 rounded-full bg-amber-300 ring-1 ring-slate-900" />
-              Bus stops (zoom in)
+              <span aria-hidden="true" class="inline-block size-2 shrink-0 rounded-full bg-amber-300 ring-1 ring-slate-900" />
+              <span class="leading-tight">Bus stops</span>
             </span>
           </div>
         </div>
-        <p class="mt-2 border-t border-slate-700 pt-1.5 text-[10px] text-slate-500">
-          Violet house pin = candidate home
+        <p class="mt-1.5 border-t border-slate-700 pt-1 text-[8px] leading-tight text-slate-500 sm:mt-2 sm:pt-1.5 sm:text-[10px]">
+          Violet pin = home
         </p>
       </div>
       <div
         v-if="anchors.length > 0"
-        class="pointer-events-auto rounded-lg border border-cyan-500/25 bg-slate-900/90 px-2.5 py-2 text-left shadow-lg shadow-black/30 backdrop-blur-md"
+        class="pointer-events-auto rounded-lg border border-cyan-500/25 bg-slate-900/95 px-2 py-1.5 text-left shadow-lg shadow-black/30 backdrop-blur-md sm:px-2.5 sm:py-2"
       >
-        <label class="flex cursor-pointer items-start gap-2">
+        <label class="flex cursor-pointer items-start gap-1.5 sm:gap-2">
           <input
             v-model="showAllAnchorCards"
             type="checkbox"
             class="mt-0.5 rounded border-slate-600 bg-slate-950 text-cyan-500 focus:ring-cyan-500/40 focus:ring-offset-0"
           />
-          <span class="text-[11px] font-medium leading-snug text-slate-100">
+          <span class="text-[10px] font-medium leading-snug text-slate-100 sm:text-[11px]">
             Show all place labels
           </span>
         </label>
-        <p class="mt-1.5 pl-6 text-[10px] leading-snug text-slate-500">
-          When off, click a colored pin to show its name and address; click the map to hide it again.
+        <p class="mt-1 pl-5 text-[8px] leading-tight text-slate-500 sm:mt-1.5 sm:pl-6 sm:text-[10px] sm:leading-snug">
+          <span class="sm:hidden">Tap a pin for name · map to hide</span>
+          <span class="hidden sm:inline">When off, click a colored pin to show its name and address; click the map to hide it again.</span>
         </p>
       </div>
     </div>
     <p
       v-if="mapboxToken"
-      class="pointer-events-none absolute bottom-3 left-3 max-w-[min(100%,18rem)] rounded-md border border-slate-700/80 bg-slate-950/90 px-2 py-1 text-[11px] leading-snug text-slate-400 shadow-lg shadow-black/40 backdrop-blur-sm"
+      class="pointer-events-none absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-2 right-2 max-w-none rounded-md border border-slate-700/80 bg-slate-950/90 px-2 py-1 text-[10px] leading-tight text-slate-400 shadow-lg shadow-black/40 backdrop-blur-sm sm:left-3 sm:right-auto sm:max-w-[min(100%,18rem)] sm:py-1.5 sm:text-[11px] sm:leading-snug"
     >
       <template v-if="readOnly">
-        View only — change home on Plan &amp; map. Route colors match stop type; use the color key for traffic (driving) and transit lines when those overlays are on.
+        <span class="sm:hidden">View only · edit on Plan &amp; map</span>
+        <span class="hidden sm:inline">View only — change home on Plan &amp; map. Route colors match stop type; use the color key for traffic (driving) and transit lines when those overlays are on.</span>
       </template>
       <template v-else-if="allPlacedSlotsFull">
-        Home, work, and school are set. Clear one in Locations to add from the map again. Route colors match stop type; overlays for traffic and transit use the key above when enabled.
+        <span class="sm:hidden">All places set · clear one in Locations to add from map</span>
+        <span class="hidden sm:inline">Home, work, and school are set. Clear one in Locations to add from the map again. Route colors match stop type; overlays for traffic and transit use the key above when enabled.</span>
       </template>
       <template v-else>
-        Click the map to add home, work, or school (each once). Route colors match stop type; traffic and transit overlays use the key above when enabled on Plan &amp; map.
+        <span class="sm:hidden">Tap map to set home, work, school (once each)</span>
+        <span class="hidden sm:inline">Click the map to add home, work, or school (each once). Route colors match stop type; traffic and transit overlays use the key above when enabled on Plan &amp; map.</span>
       </template>
     </p>
   </div>

@@ -205,7 +205,9 @@ function onSchoolSelect(p: { lngLat: { lng: number; lat: number }; label: string
       </div>
       <p v-else-if="candidateHome && !discoveringPois && !anchors.length" class="text-xs text-slate-500">
         <template v-if="readonly">No places listed for this score.</template>
-        <template v-else>No anchors yet. If search is failing, check your token or tap Refresh nearby places.</template>
+        <template v-else>
+          No places yet. Set a home on the map first, or tap Refresh nearby places after your home is set.
+        </template>
       </p>
     </div>
   </component>

@@ -7,7 +7,7 @@ import { estimateYearlyTravelMinutes, rescoreKeepingRouteErrors, scoreFromRoutes
 import type {
   Anchor,
   AnchorTrafficSummary,
-  LifeScenario,
+  LifePlan,
   LngLat,
   NamedPlace,
   RouteOverlay,
@@ -15,7 +15,7 @@ import type {
   TravelMode,
 } from '~/types'
 
-const MAX_SCENARIOS = 3
+const MAX_PLANS = 3
 
 type RouteCalcResult = {
   id: string
@@ -29,7 +29,7 @@ type RouteCalcResult = {
   commuteNote?: string
 }
 
-type ScenarioInternal = LifeScenario & {
+type PlanInternal = LifePlan & {
   rebuildSeq: number
   debounceTimer: ReturnType<typeof setTimeout> | null
   homeGeocodeSeq: number
@@ -37,17 +37,17 @@ type ScenarioInternal = LifeScenario & {
   schoolGeocodeSeq: number
 }
 
-function newScenarioId(): string {
+function newPlanId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
   }
-  return `sc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+  return `plan-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
-function createEmptyScenario(ordinal: number): ScenarioInternal {
+function createEmptyPlan(ordinal: number): PlanInternal {
   return {
-    id: newScenarioId(),
-    label: `Scenario ${ordinal}`,
+    id: newPlanId(),
+    label: `Plan ${ordinal}`,
     candidateHome: null,
     candidateHomeLabel: null,
     candidateHomeAddress: null,
@@ -70,23 +70,23 @@ function createEmptyScenario(ordinal: number): ScenarioInternal {
   }
 }
 
-const scenarios = ref<ScenarioInternal[]>([createEmptyScenario(1)])
-const activeScenarioId = ref<string>(scenarios.value[0]!.id)
+const plans = ref<PlanInternal[]>([createEmptyPlan(1)])
+const activePlanId = ref<string>(plans.value[0]!.id)
 
-function findScenarioIndex(id: string): number {
-  return scenarios.value.findIndex((s) => s.id === id)
+function findPlanIndex(id: string): number {
+  return plans.value.findIndex((s) => s.id === id)
 }
 
-function getScenario(id: string): ScenarioInternal | undefined {
-  return scenarios.value.find((s) => s.id === id)
+function getPlan(id: string): PlanInternal | undefined {
+  return plans.value.find((s) => s.id === id)
 }
 
-function activeScenario(): ScenarioInternal | undefined {
-  const id = activeScenarioId.value
-  let s = getScenario(id)
-  if (!s && scenarios.value.length) {
-    s = scenarios.value[0]
-    activeScenarioId.value = s!.id
+function activePlan(): PlanInternal | undefined {
+  const id = activePlanId.value
+  let s = getPlan(id)
+  if (!s && plans.value.length) {
+    s = plans.value[0]
+    activePlanId.value = s!.id
   }
   return s
 }
@@ -94,7 +94,7 @@ function activeScenario(): ScenarioInternal | undefined {
 export function useLifeRadius() {
   const config = useRuntimeConfig()
 
-  const active = computed(() => activeScenario())
+  const active = computed(() => activePlan())
 
   const anchors = computed({
     get: () => active.value?.anchors ?? [],
@@ -136,8 +136,8 @@ export function useLifeRadius() {
     },
   })
 
-  async function rebuildAnchorsForScenario(scenarioId: string) {
-    const s = getScenario(scenarioId)
+  async function rebuildAnchorsForPlan(planId: string) {
+    const s = getPlan(planId)
     if (!s) return
 
     const mySeq = ++s.rebuildSeq
@@ -272,14 +272,14 @@ export function useLifeRadius() {
     if (s.debounceTimer) clearTimeout(s.debounceTimer)
     const sid = s.id
     s.debounceTimer = setTimeout(() => {
-      const cur = getScenario(sid)
+      const cur = getPlan(sid)
       if (cur) cur.debounceTimer = null
-      void rebuildAnchorsForScenario(sid)
+      void rebuildAnchorsForPlan(sid)
     }, 650)
   }
 
-  async function runHomeReverseGeocode(scenarioId: string, lngLat: LngLat) {
-    const s = getScenario(scenarioId)
+  async function runHomeReverseGeocode(planId: string, lngLat: LngLat) {
+    const s = getPlan(planId)
     if (!s) return
     const id = ++s.homeGeocodeSeq
     const base = (config.public.mapboxApiBase as string) || 'https://api.mapbox.com'
@@ -296,8 +296,8 @@ export function useLifeRadius() {
     }
   }
 
-  async function runWorkReverseGeocode(scenarioId: string, lngLat: LngLat) {
-    const s = getScenario(scenarioId)
+  async function runWorkReverseGeocode(planId: string, lngLat: LngLat) {
+    const s = getPlan(planId)
     if (!s) return
     const id = ++s.workGeocodeSeq
     const base = (config.public.mapboxApiBase as string) || 'https://api.mapbox.com'
@@ -309,14 +309,14 @@ export function useLifeRadius() {
       const p = s.workPlace
       if (!p || p.lngLat.lng !== lngLat.lng || p.lngLat.lat !== lngLat.lat) return
       s.workPlace = { ...p, address: line ?? undefined }
-      void rebuildAnchorsForScenario(scenarioId)
+      void rebuildAnchorsForPlan(planId)
     } catch {
       /* ignore */
     }
   }
 
-  async function runSchoolReverseGeocode(scenarioId: string, lngLat: LngLat) {
-    const s = getScenario(scenarioId)
+  async function runSchoolReverseGeocode(planId: string, lngLat: LngLat) {
+    const s = getPlan(planId)
     if (!s) return
     const id = ++s.schoolGeocodeSeq
     const base = (config.public.mapboxApiBase as string) || 'https://api.mapbox.com'
@@ -328,7 +328,7 @@ export function useLifeRadius() {
       const p = s.schoolPlace
       if (!p || p.lngLat.lng !== lngLat.lng || p.lngLat.lat !== lngLat.lat) return
       s.schoolPlace = { ...p, address: line ?? undefined }
-      void rebuildAnchorsForScenario(scenarioId)
+      void rebuildAnchorsForPlan(planId)
     } catch {
       /* ignore */
     }
@@ -339,7 +339,7 @@ export function useLifeRadius() {
     if (!s) return
     s.workPlace = place
     s.scoreResult = null
-    void rebuildAnchorsForScenario(s.id)
+    void rebuildAnchorsForPlan(s.id)
     if (place && !place.address?.trim()) void runWorkReverseGeocode(s.id, place.lngLat)
   }
 
@@ -348,7 +348,7 @@ export function useLifeRadius() {
     if (!s) return
     s.schoolPlace = place
     s.scoreResult = null
-    void rebuildAnchorsForScenario(s.id)
+    void rebuildAnchorsForPlan(s.id)
     if (place && !place.address?.trim()) void runSchoolReverseGeocode(s.id, place.lngLat)
   }
 
@@ -358,7 +358,7 @@ export function useLifeRadius() {
   }
 
   /**
-   * @param fromSearch When true, `label` is treated as the formatted address (e.g. Mapbox `place_name`). When false/omitted, address is resolved via reverse geocode (map drop).
+   * @param fromSearch When true, `label` is the formatted address from search. When false/omitted, address comes from reverse geocode (map drop).
    */
   function setCandidateHome(lngLat: LngLat, label?: string | null, fromSearch?: boolean) {
     const s = active.value
@@ -385,24 +385,24 @@ export function useLifeRadius() {
     s.candidateHomeLabel = null
     s.candidateHomeAddress = null
     s.scoreResult = null
-    void rebuildAnchorsForScenario(s.id)
+    void rebuildAnchorsForPlan(s.id)
   }
 
   async function refreshNearbyPlaces() {
     const s = active.value
-    if (s) await rebuildAnchorsForScenario(s.id)
+    if (s) await rebuildAnchorsForPlan(s.id)
   }
 
   async function calculateScore() {
     const s = active.value
     if (!s) return
 
-    const scenarioId = s.id
+    const planId = s.id
     const home = s.candidateHome
     const token = config.public.mapboxAccessToken as string
     const base = (config.public.mapboxApiBase as string) || 'https://api.mapbox.com'
 
-    const target = () => getScenario(scenarioId)
+    const target = () => getPlan(planId)
 
     const t0 = target()
     if (!t0) return
@@ -418,8 +418,7 @@ export function useLifeRadius() {
       return
     }
     if (!token) {
-      t0.calculateError =
-        'Add your Mapbox token to .env as NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN, restart the dev server, then try again.'
+      t0.calculateError = 'We couldn’t calculate routes—the map isn’t connected. Refresh and try again, or check back later.'
       return
     }
 
@@ -614,7 +613,7 @@ export function useLifeRadius() {
     refreshScoreAfterTripFrequencyChange()
   }
 
-  function clearScenarioTimers(s: ScenarioInternal) {
+  function clearPlanTimers(s: PlanInternal) {
     s.rebuildSeq += 1
     if (s.debounceTimer) {
       clearTimeout(s.debounceTimer)
@@ -622,47 +621,47 @@ export function useLifeRadius() {
     }
   }
 
-  function setActiveScenario(id: string) {
-    if (getScenario(id)) activeScenarioId.value = id
+  function setActivePlan(id: string) {
+    if (getPlan(id)) activePlanId.value = id
   }
 
-  function addScenario(): boolean {
-    if (scenarios.value.length >= MAX_SCENARIOS) return false
-    const next = createEmptyScenario(scenarios.value.length + 1)
-    scenarios.value = [...scenarios.value, next]
-    activeScenarioId.value = next.id
+  function addPlan(): boolean {
+    if (plans.value.length >= MAX_PLANS) return false
+    const next = createEmptyPlan(plans.value.length + 1)
+    plans.value = [...plans.value, next]
+    activePlanId.value = next.id
     return true
   }
 
-  function removeScenario(id: string): boolean {
-    if (scenarios.value.length <= 1) return false
-    const idx = findScenarioIndex(id)
+  function removePlan(id: string): boolean {
+    if (plans.value.length <= 1) return false
+    const idx = findPlanIndex(id)
     if (idx === -1) return false
-    const removed = scenarios.value[idx]!
-    clearScenarioTimers(removed)
-    const nextList = scenarios.value.filter((x) => x.id !== id)
-    scenarios.value = nextList
-    if (activeScenarioId.value === id) {
-      activeScenarioId.value = nextList[0]!.id
+    const removed = plans.value[idx]!
+    clearPlanTimers(removed)
+    const nextList = plans.value.filter((x) => x.id !== id)
+    plans.value = nextList
+    if (activePlanId.value === id) {
+      activePlanId.value = nextList[0]!.id
     }
     return true
   }
 
-  function setScenarioLabel(id: string, label: string) {
-    const s = getScenario(id)
+  function setPlanLabel(id: string, label: string) {
+    const s = getPlan(id)
     if (s) s.label = label.trim() || s.label
   }
 
   function resetAll() {
-    for (const s of scenarios.value) {
-      clearScenarioTimers(s)
+    for (const s of plans.value) {
+      clearPlanTimers(s)
       s.homeGeocodeSeq += 1
       s.workGeocodeSeq += 1
       s.schoolGeocodeSeq += 1
     }
-    const fresh = createEmptyScenario(1)
-    scenarios.value = [fresh]
-    activeScenarioId.value = fresh.id
+    const fresh = createEmptyPlan(1)
+    plans.value = [fresh]
+    activePlanId.value = fresh.id
   }
 
   function setShowTrafficLayer(on: boolean) {
@@ -675,17 +674,17 @@ export function useLifeRadius() {
     if (s) s.showTransitLayer = on
   }
 
-  const scoredScenarioCount = computed(() => scenarios.value.filter((s) => s.scoreResult != null).length)
+  const scoredPlanCount = computed(() => plans.value.filter((s) => s.scoreResult != null).length)
 
   return {
-    maxScenarios: MAX_SCENARIOS,
-    scenarios,
-    activeScenarioId,
-    scoredScenarioCount,
-    setActiveScenario,
-    addScenario,
-    removeScenario,
-    setScenarioLabel,
+    maxPlans: MAX_PLANS,
+    plans,
+    activePlanId,
+    scoredPlanCount,
+    setActivePlan,
+    addPlan,
+    removePlan,
+    setPlanLabel,
     anchors,
     candidateHome,
     candidateHomeLabel,

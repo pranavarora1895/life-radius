@@ -68,7 +68,7 @@ export interface AnchorTrafficSummary {
    * Transit mode only: walking path length ÷ straight-line distance (≥ 1). UI explains this as “% longer than a straight line.”
    */
   walkDetourFactor: number | null
-  /** Transit mode: walking duration from Mapbox (seconds, one way). */
+  /** Transit mode: walking duration from the walking route (seconds, one way). */
   walkCommuteSeconds?: number | null
   /** Transit mode: public-transit duration when available (seconds, one way). */
   transitCommuteSeconds?: number | null
@@ -112,7 +112,7 @@ export interface GeocodeFeature {
 }
 
 /** One plan-and-score workspace (up to three per session). */
-export interface LifeScenario {
+export interface LifePlan {
   id: string
   label: string
   candidateHome: LngLat | null
@@ -131,8 +131,8 @@ export interface LifeScenario {
   showTransitLayer: boolean
 }
 
-/** Aggregated weighted burden per category for cross-scenario charts. */
-export interface ScenarioCompareCategoryRow {
+/** Aggregated weighted burden per category for cross-plan charts. */
+export interface PlanCompareCategoryRow {
   category: AnchorCategory
   /** Sum of weighted impact for legs in this category (0 if none / errors). */
   weightedSum: number
@@ -148,19 +148,19 @@ export interface GroceryCompareLeg {
   weightedSum: number
   /** Share among grocery legs only (sums to 100 when all have weight). */
   pctOfGrocery: number
-  /** Share of entire scenario total burden — comparable to other place types. */
+  /** Share of entire plan total burden — comparable to other place types. */
   pctOfTotalBurden: number
 }
 
-/** Snapshot derived from one scored scenario for the Compare view. */
-export interface ScenarioCompareSnapshot {
-  scenarioId: string
+/** Snapshot derived from one scored plan for the Compare view. */
+export interface PlanCompareSnapshot {
+  planId: string
   label: string
   lifeScore: number
   totalBurden: number
   yearlyTravelMinutes: number
   travelMode: TravelMode
-  byCategory: ScenarioCompareCategoryRow[]
+  byCategory: PlanCompareCategoryRow[]
   /** Per-grocery-stop burden; empty if no groceries. Used for sunburst (multiple stops vs one lump). */
   groceryLegs: GroceryCompareLeg[]
 }

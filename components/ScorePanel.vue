@@ -269,7 +269,7 @@ const dashboardLegs = computed((): ScoreDashboardLeg[] => {
         >
           Colored lines follow the routes used for the minutes above (home → each stop).
           <template v-if="travelMode === 'driving'">
-            Driving uses Mapbox’s traffic-aware routing where data exists, so these minutes reflect congestion along the chosen route.
+            For driving, we use traffic-aware times when that data exists, so these minutes reflect congestion along the route shown.
             With
             <span
               class="font-medium"
@@ -287,7 +287,7 @@ const dashboardLegs = computed((): ScoreDashboardLeg[] => {
             for nearby rail, ferry, and bus context on the basemap.
           </template>
           <template v-else>
-            Walking and cycling use non-traffic profiles; the road traffic overlay stays off in those modes so the map stays readable.
+            Walking and cycling don’t use live traffic on roads—we hide the congestion overlay in those modes so the map stays readable.
           </template>
         </p>
       </div>

@@ -102,7 +102,7 @@ export function insightForTravelMode(
     return `${head} We mixed walking and public transit times where transit was clearly faster; other legs stayed on walking.`
   }
   if (!options?.transitComparisonEnabled) {
-    return `${head} Transit times aren’t enabled for comparisons yet, so this score uses walking time for every leg.`
+    return `${head} We couldn’t compare public transit with walking for these trips, so this score uses walking time for every leg.`
   }
   return `${head} Every leg used walking time — either the trip was short enough to walk, or transit wasn’t clearly faster.`
 }

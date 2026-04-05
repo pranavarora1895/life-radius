@@ -23,7 +23,7 @@ const onReset = inject(lifeRadiusResetKey, null)
           Life Radius
         </h1>
         <p
-          class="mt-0.5 overflow-x-auto text-xs leading-snug text-slate-400 whitespace-nowrap sm:text-sm sm:leading-normal"
+          class="mt-0.5 text-xs leading-snug text-slate-400 sm:text-sm sm:leading-normal"
         >
           Plan up to three candidate homes, compare Life Scores side by side: add work and school, and we score trips to
           groceries, gas, pharmacy, gym, and social spots we find nearby.

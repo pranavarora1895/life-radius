@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { AnchorCategory, ScenarioCompareCategoryRow, ScenarioCompareSnapshot } from '~/types'
+import type { AnchorCategory, PlanCompareCategoryRow, PlanCompareSnapshot } from '~/types'
 import { categoryIconName } from '~/utils/categoryIcons'
 import { buildDonutPaths, burdenSlicesForSnapshot, CATEGORY_HEX } from '~/utils/compareCharts'
 import { categoryDisplayName, formatYearlyTravelCompact } from '~/utils/scoreExplain'
-import { categoriesPresentInSnapshots } from '~/utils/scenarioCompare'
+import { categoriesPresentInSnapshots } from '~/utils/planCompare'
 
 const props = defineProps<{
-  snapshots: ScenarioCompareSnapshot[]
+  snapshots: PlanCompareSnapshot[]
 }>()
 
 const palette = [
@@ -48,23 +48,23 @@ function pal(index: number) {
 
 const categories = computed(() => categoriesPresentInSnapshots(props.snapshots))
 
-function weightedFor(snapshot: ScenarioCompareSnapshot, category: AnchorCategory) {
-  const row = snapshot.byCategory.find((r: ScenarioCompareCategoryRow) => r.category === category)
+function weightedFor(snapshot: PlanCompareSnapshot, category: AnchorCategory) {
+  const row = snapshot.byCategory.find((r: PlanCompareCategoryRow) => r.category === category)
   return row?.weightedSum ?? 0
 }
 
 const maxBurden = computed(() =>
-  Math.max(1, ...props.snapshots.map((s: ScenarioCompareSnapshot) => s.totalBurden)),
+  Math.max(1, ...props.snapshots.map((s: PlanCompareSnapshot) => s.totalBurden)),
 )
 
 const maxYearly = computed(() =>
-  Math.max(1, ...props.snapshots.map((s: ScenarioCompareSnapshot) => s.yearlyTravelMinutes)),
+  Math.max(1, ...props.snapshots.map((s: PlanCompareSnapshot) => s.yearlyTravelMinutes)),
 )
 
 function maxWeightedForCategory(cat: AnchorCategory) {
   return Math.max(
     0.001,
-    ...props.snapshots.map((s: ScenarioCompareSnapshot) => weightedFor(s, cat)),
+    ...props.snapshots.map((s: PlanCompareSnapshot) => weightedFor(s, cat)),
   )
 }
 
@@ -122,11 +122,11 @@ const bestYearlyIndex = computed(() => {
   return best
 })
 
-/** Donut per scenario */
+/** Donut per plan */
 const donutR = { inner: 38, outer: 62 }
 const donutBox = 150
 
-function donutPathsFor(sn: ScenarioCompareSnapshot) {
+function donutPathsFor(sn: PlanCompareSnapshot) {
   const slices = burdenSlicesForSnapshot(sn)
   return buildDonutPaths(slices, donutBox / 2, donutBox / 2, donutR.inner, donutR.outer)
 }
@@ -151,7 +151,7 @@ function radarVertex(catIndex: number, n: number, norm: number) {
   }
 }
 
-function radarPointsString(sn: ScenarioCompareSnapshot): string {
+function radarPointsString(sn: PlanCompareSnapshot): string {
   const cats = categories.value
   const n = cats.length
   if (n < 3) return ''
@@ -206,7 +206,7 @@ function radarTextAnchor(catIndex: number, n: number): 'start' | 'middle' | 'end
   return 'middle'
 }
 
-/** Vertical bar charts — wide enough per column so scenario names are not truncated. */
+/** Vertical bar charts — wide enough per column so plan names are not truncated. */
 const vChartH = 156
 const vChartW = computed(() => Math.max(280, 52 + props.snapshots.length * 96))
 const vBaselineY = 124
@@ -252,7 +252,7 @@ function vBarX(index: number, total: number) {
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <article
             v-for="(sn, si) in snapshots"
-            :key="`hero-${sn.scenarioId}`"
+            :key="`hero-${sn.planId}`"
             class="relative overflow-hidden rounded-2xl border p-5 transition"
             :class="[pal(si).card, bestLifeIndex === si ? `ring-2 ${pal(si).ring}` : '']"
           >
@@ -335,7 +335,7 @@ function vBarX(index: number, total: number) {
         <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           <div
             v-for="(sn, si) in snapshots"
-            :key="`donut-${sn.scenarioId}`"
+            :key="`donut-${sn.planId}`"
             class="flex flex-col items-center rounded-xl border border-slate-800/80 bg-slate-900/50 px-4 py-5"
           >
             <p class="mb-3 max-w-full truncate text-center text-sm font-semibold" :class="pal(si).text">
@@ -358,7 +358,7 @@ function vBarX(index: number, total: number) {
                 />
                 <path
                   v-for="(p, pi) in donutPathsFor(sn)"
-                  :key="`${sn.scenarioId}-d-${pi}`"
+                  :key="`${sn.planId}-d-${pi}`"
                   :d="p.d"
                   :fill="p.color"
                   stroke="rgb(15 23 42)"
@@ -386,7 +386,7 @@ function vBarX(index: number, total: number) {
             <ul class="mt-4 w-full max-w-[220px] space-y-1.5 text-left">
               <li
                 v-for="sl in burdenSlicesForSnapshot(sn)"
-                :key="sn.scenarioId + sl.category"
+                :key="sn.planId + sl.category"
                 class="flex items-center justify-between gap-2 text-[11px]"
               >
                 <span class="flex min-w-0 items-center gap-2 text-slate-400">
@@ -446,7 +446,7 @@ function vBarX(index: number, total: number) {
               />
               <polygon
                 v-for="(sn, si) in snapshots"
-                :key="`radar-${sn.scenarioId}`"
+                :key="`radar-${sn.planId}`"
                 :points="radarPointsString(sn)"
                 :fill="pal(si).hex"
                 fill-opacity="0.12"
@@ -471,7 +471,7 @@ function vBarX(index: number, total: number) {
           <div class="flex flex-wrap justify-center gap-3 lg:flex-col lg:justify-start">
             <div
               v-for="(sn, si) in snapshots"
-              :key="`leg-${sn.scenarioId}`"
+              :key="`leg-${sn.planId}`"
               class="inline-flex items-center gap-2 rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2"
             >
               <span class="size-3 rounded-sm" :style="{ backgroundColor: pal(si).hex }" />
@@ -495,10 +495,10 @@ function vBarX(index: number, total: number) {
               :viewBox="`0 0 ${vChartW} ${vChartH}`"
               :style="{ width: '100%', maxWidth: `${vChartW}px` }"
               role="img"
-              aria-label="Total burden by scenario"
+              aria-label="Total burden by plan"
             >
               <line x1="12" :x2="vChartW - 12" :y1="vBaselineY" :y2="vBaselineY" class="stroke-slate-700" stroke-width="1" />
-              <template v-for="(sn, si) in snapshots" :key="`vb-${sn.scenarioId}`">
+              <template v-for="(sn, si) in snapshots" :key="`vb-${sn.planId}`">
                 <rect
                   :x="vBarX(si, snapshots.length)"
                   :y="vBaselineY - vBarHeight(sn.totalBurden, maxBurden)"
@@ -541,10 +541,10 @@ function vBarX(index: number, total: number) {
               :viewBox="`0 0 ${vChartW} ${vChartH}`"
               :style="{ width: '100%', maxWidth: `${vChartW}px` }"
               role="img"
-              aria-label="Yearly travel minutes by scenario"
+              aria-label="Yearly travel minutes by plan"
             >
               <line x1="12" :x2="vChartW - 12" :y1="vBaselineY" :y2="vBaselineY" class="stroke-slate-700" stroke-width="1" />
-              <template v-for="(sn, si) in snapshots" :key="`vy-${sn.scenarioId}`">
+              <template v-for="(sn, si) in snapshots" :key="`vy-${sn.planId}`">
                 <rect
                   :x="vBarX(si, snapshots.length)"
                   :y="vBaselineY - vBarHeight(sn.yearlyTravelMinutes, maxYearly)"

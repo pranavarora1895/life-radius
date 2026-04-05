@@ -4,6 +4,13 @@
 
 html {
   @apply antialiased text-zinc-900 bg-zinc-50;
+  /* Avoid horizontal drift from full-bleed children; respect notched devices via Nuxt viewport-fit */
+  overflow-x: clip;
+}
+
+body {
+  overflow-x: clip;
+  min-height: 100dvh;
 }
 
 html.dark {

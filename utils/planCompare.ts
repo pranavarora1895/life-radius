@@ -2,9 +2,9 @@ import type {
   Anchor,
   AnchorCategory,
   GroceryCompareLeg,
-  LifeScenario,
-  ScenarioCompareCategoryRow,
-  ScenarioCompareSnapshot,
+  LifePlan,
+  PlanCompareCategoryRow,
+  PlanCompareSnapshot,
 } from '~/types'
 
 const CATEGORY_ORDER: AnchorCategory[] = [
@@ -19,15 +19,15 @@ const CATEGORY_ORDER: AnchorCategory[] = [
 ]
 
 /**
- * Build a compare snapshot from one scored scenario (aggregates legs by anchor category).
+ * Build a compare snapshot from one scored plan (aggregates legs by anchor category).
  */
-export function buildScenarioCompareSnapshot(
-  scenarioId: string,
+export function buildPlanCompareSnapshot(
+  planId: string,
   label: string,
-  travelMode: LifeScenario['travelMode'],
+  travelMode: LifePlan['travelMode'],
   anchors: Anchor[],
-  scoreResult: NonNullable<LifeScenario['scoreResult']>,
-): ScenarioCompareSnapshot {
+  scoreResult: NonNullable<LifePlan['scoreResult']>,
+): PlanCompareSnapshot {
   const anchorById = new Map(anchors.map((a) => [a.id, a]))
 
   const buckets = new Map<
@@ -51,7 +51,7 @@ export function buildScenarioCompareSnapshot(
     }
   }
 
-  const byCategory: ScenarioCompareCategoryRow[] = CATEGORY_ORDER.map((category) => {
+  const byCategory: PlanCompareCategoryRow[] = CATEGORY_ORDER.map((category) => {
     const b = buckets.get(category)!
     return {
       category,
@@ -79,7 +79,7 @@ export function buildScenarioCompareSnapshot(
   }))
 
   return {
-    scenarioId,
+    planId,
     label,
     lifeScore: scoreResult.lifeScore,
     totalBurden: scoreResult.totalBurden,
@@ -90,17 +90,17 @@ export function buildScenarioCompareSnapshot(
   }
 }
 
-/** Snapshots for every scenario that has a score (for the Compare view). */
-export function snapshotsFromScenarios(scenarios: LifeScenario[]): ScenarioCompareSnapshot[] {
-  return scenarios
-    .filter((s): s is LifeScenario & { scoreResult: NonNullable<LifeScenario['scoreResult']> } => s.scoreResult != null)
+/** Snapshots for every plan that has a score (for the Compare view). */
+export function snapshotsFromPlans(plans: LifePlan[]): PlanCompareSnapshot[] {
+  return plans
+    .filter((s): s is LifePlan & { scoreResult: NonNullable<LifePlan['scoreResult']> } => s.scoreResult != null)
     .map((s) =>
-      buildScenarioCompareSnapshot(s.id, s.label, s.travelMode, s.anchors, s.scoreResult),
+      buildPlanCompareSnapshot(s.id, s.label, s.travelMode, s.anchors, s.scoreResult),
     )
 }
 
 /** Categories that have at least one leg in any snapshot (for chart rows). */
-export function categoriesPresentInSnapshots(snapshots: ScenarioCompareSnapshot[]): AnchorCategory[] {
+export function categoriesPresentInSnapshots(snapshots: PlanCompareSnapshot[]): AnchorCategory[] {
   const set = new Set<AnchorCategory>()
   for (const sn of snapshots) {
     for (const row of sn.byCategory) {

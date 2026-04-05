@@ -122,7 +122,7 @@ function clearField() {
         </li>
       </ul>
     </div>
-    <p v-if="!hasToken" class="text-xs text-amber-400/90">Mapbox token required for search.</p>
+    <p v-if="!hasToken" class="text-xs text-amber-400/90">Address search isn’t available right now.</p>
     <p v-else-if="geocodeError" class="text-xs text-red-400">{{ geocodeError }}</p>
   </div>
 </template>

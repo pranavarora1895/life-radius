@@ -798,10 +798,9 @@ function detourTier(factor: number | null): {
           <p class="mt-0.5 text-xs leading-snug text-slate-400">
             The <strong class="font-medium text-slate-300">Each destination</strong> cards list walk and transit minutes
             (when we have both) and what counted for your score. Below, detour compares each
-            <strong class="font-medium text-slate-300">walking path</strong> to a straight line (path length ÷
-            crow-flies) — extra context, like congestion for driving. Turn on
-            <span class="font-medium text-indigo-200/85">Show transit on map</span> for rail and ferry context on the
-            map.
+            <strong class="font-medium text-slate-300">walking path</strong> to a straight line between the same
+            points—how direct the walk is, similar to how we show congestion for driving. Turn on
+            <span class="font-medium text-indigo-200/85">Show transit on map</span> for rail and ferry lines on the map.
           </p>
         </div>
       </div>
@@ -935,7 +934,7 @@ function detourTier(factor: number | null): {
       <Icon name="lucide:footprints" class="mx-auto size-8 text-cyan-600/50" aria-hidden="true" />
       <p class="mt-2 text-sm font-medium text-slate-200">Walking &amp; cycling</p>
       <p class="mx-auto mt-1 max-w-md text-xs text-slate-500">
-        Congestion stats are for driving only. Times above use Mapbox’s {{ travelMode }} routes.
+        Congestion detail is for driving only. The times above follow your {{ travelMode }} choice for each trip.
       </p>
     </div>
   </div>
