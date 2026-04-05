@@ -1,0 +1,26 @@
+{
+  "name": "life-radius",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@iconify-json/lucide": "^1.2.101",
+    "@iconify/vue": "^5.0.0",
+    "mapbox-gl": "^3.11.0",
+    "nuxt": "^3.15.4",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@nuxt/kit": "^3.21.2",
+    "@nuxtjs/tailwindcss": "^6.13.1",
+    "@types/mapbox-gl": "^3.4.1",
+    "typescript": "^5.7.3"
+  }
+}
