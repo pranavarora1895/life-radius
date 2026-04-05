@@ -121,10 +121,14 @@ const mapboxContainerRef = ref<HTMLDivElement | null>(null)
 const pickPrompt = ref<PickPromptState | null>(null)
 /** Narrow viewports need smaller fitBounds padding so routes stay visible without excessive zoom-out. */
 const narrowScreen = ref(false)
+/** `lg` breakpoint — legend stays expanded; below `lg` it can collapse. */
+const isLgViewport = ref(true)
+const mobileLegendExpanded = ref(true)
 
 function updateNarrowScreen() {
   if (typeof window === 'undefined') return
   narrowScreen.value = window.matchMedia('(max-width: 639px)').matches
+  isLgViewport.value = window.matchMedia('(min-width: 1024px)').matches
 }
 
 function boundsFitPadding(): number {
@@ -561,6 +565,7 @@ onMounted(async () => {
   })
   onResize = () => {
     updateNarrowScreen()
+    if (isLgViewport.value) mobileLegendExpanded.value = true
     map?.resize()
   }
   window.addEventListener('resize', onResize)
@@ -735,10 +740,31 @@ onBeforeUnmount(() => {
       class="pointer-events-none absolute left-1 z-30 flex w-[min(100%,calc(100vw-0.5rem),16rem)] flex-col gap-1.5 sm:left-2 sm:max-w-[min(100%,calc(100vw-1rem),18rem)] sm:gap-2"
       :class="
         underFixedTopUi
-          ? 'top-1 max-lg:top-[calc(env(safe-area-inset-top)+8.5rem)] lg:top-2'
-          : 'top-1 sm:top-2'
+          ? 'top-2 max-lg:top-[calc(env(safe-area-inset-top)+9rem)] lg:top-2'
+          : 'top-2 sm:top-2'
       "
     >
+      <button
+        v-if="!isLgViewport"
+        type="button"
+        class="pointer-events-auto flex w-full items-center justify-between gap-2 rounded-lg border border-cyan-500/25 bg-slate-900/95 px-2.5 py-2 text-left shadow-lg shadow-black/30 backdrop-blur-md sm:px-3"
+        :aria-expanded="mobileLegendExpanded"
+        aria-controls="map-legend-panel"
+        @click="mobileLegendExpanded = !mobileLegendExpanded"
+      >
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-300">Legend</span>
+        <Icon
+          name="lucide:chevron-down"
+          class="size-4 shrink-0 text-slate-400 transition-transform duration-200"
+          :class="{ 'rotate-180': mobileLegendExpanded }"
+          aria-hidden="true"
+        />
+      </button>
+      <div
+        id="map-legend-panel"
+        class="flex flex-col gap-1.5"
+        :class="{ 'max-lg:hidden': !isLgViewport && !mobileLegendExpanded }"
+      >
       <div
         v-if="showColorKey"
         class="pointer-events-auto rounded-lg border border-cyan-500/25 bg-slate-900/95 px-2 py-1.5 text-left shadow-lg shadow-black/30 backdrop-blur-md sm:px-2.5 sm:py-2"
@@ -862,6 +888,7 @@ onBeforeUnmount(() => {
           <span class="sm:hidden">Tap a pin for name · map to hide</span>
           <span class="hidden sm:inline">When off, click a colored pin to show its name and address; click the map to hide it again.</span>
         </p>
+      </div>
       </div>
     </div>
     <p
