@@ -87,7 +87,7 @@ function onTransitLayerChange(e: Event) {
             />
             Show traffic on map
           </span>
-          <span class="mt-0.5 block text-[11px] leading-snug text-slate-500">
+          <span class="mt-0.5 block text-[11px] leading-snug text-slate-200">
             Typical congestion on major roads, refreshed about every eight minutes. Easiest to read while planning drives;
             your route lines still show for whichever travel mode you chose.
           </span>
@@ -111,7 +111,7 @@ function onTransitLayerChange(e: Event) {
             />
             Show transit on map
           </span>
-          <span class="mt-0.5 block text-[11px] leading-snug text-slate-500">
+          <span class="mt-0.5 block text-[11px] leading-snug text-slate-200">
             <template v-if="walkTransitComparisonAvailable">
               Adds rail, ferries, bus-only lanes, and stop markers. For Transit scoring, we can compare walking with
               public transit when both estimates are available.
@@ -152,7 +152,7 @@ function onTransitLayerChange(e: Event) {
         <Icon name="lucide:rotate-ccw" class="size-4 shrink-0" aria-hidden="true" />
         Reset all
       </button>
-      <p class="mt-2 text-[11px] leading-snug text-slate-500">
+      <p class="mt-2 text-[11px] leading-snug text-slate-300">
         Reset clears every plan and leaves one empty workspace. Use + to plan up to three homes; Compare opens when at
         least two have a Life Score.
       </p>

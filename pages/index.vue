@@ -102,6 +102,26 @@ function confirmRemovePlan(s: LifePlan) {
 
 const topRowHeightClass = 'min-h-[280px] h-[min(42vh,400px)] lg:h-[min(50vh,520px)]'
 
+/** Mobile: right drawer for plan controls (replaces bottom sheet). */
+const planDrawerOpen = ref(false)
+
+const isMinLg = ref(
+  import.meta.client ? window.matchMedia('(min-width: 1024px)').matches : false,
+)
+onMounted(() => {
+  const mq = window.matchMedia('(min-width: 1024px)')
+  isMinLg.value = mq.matches
+  const onChange = () => {
+    isMinLg.value = mq.matches
+  }
+  mq.addEventListener('change', onChange)
+  onBeforeUnmount(() => mq.removeEventListener('change', onChange))
+})
+
+watch(isMinLg, (lg) => {
+  if (lg) planDrawerOpen.value = false
+})
+
 watch(calculating, (on) => {
   if (on) activeTab.value = 'results'
 })
@@ -118,6 +138,10 @@ watch(showCompareTab, (on) => {
   if (!on && activeTab.value === 'compare') {
     activeTab.value = showResultsTab.value ? 'results' : 'plan'
   }
+})
+
+watch(activeTab, (tab) => {
+  if (tab !== 'plan') planDrawerOpen.value = false
 })
 
 function resetAndGoPlan() {
@@ -302,18 +326,29 @@ provide(lifeRadiusResetKey, resetAndGoPlan)
         </div>
       </div>
 
-      <!-- Plan & map: full-screen map + bottom sheet on mobile; sidebar + map on lg+. -->
+      <!-- Plan & map: full-screen map + right drawer on mobile; sidebar + map on lg+. -->
       <div
         v-if="activeTab === 'plan'"
         class="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-4 max-lg:fixed max-lg:inset-0 max-lg:z-10 max-lg:m-0 max-lg:max-w-none max-lg:gap-0 max-lg:p-0 lg:flex-row lg:items-stretch lg:gap-4 lg:p-5 xl:p-6 2xl:px-8"
       >
         <aside class="order-2 hidden w-full shrink-0 flex-col gap-3 lg:order-1 lg:flex lg:max-w-[22rem]">
-          <PlanControlsPanel />
+          <PlanControlsPanel v-if="isMinLg" />
         </aside>
 
-        <PlanBottomSheet>
+        <PlanSideDrawer v-if="!isMinLg" v-model="planDrawerOpen">
           <PlanControlsPanel />
-        </PlanBottomSheet>
+        </PlanSideDrawer>
+
+        <button
+          v-if="!isMinLg && !planDrawerOpen"
+          type="button"
+          class="pointer-events-auto fixed z-20 inline-flex items-center gap-2 rounded-full border border-cyan-500/35 bg-slate-900/95 py-2.5 pl-3 pr-4 text-sm font-medium text-cyan-100 shadow-[0_4px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm transition hover:border-cyan-400/50 hover:bg-slate-800/95 max-lg:right-[max(0.75rem,env(safe-area-inset-right))] max-lg:bottom-[max(0.75rem,env(safe-area-inset-bottom)+2.5rem)] lg:hidden"
+          aria-label="Open locations and travel settings"
+          @click="planDrawerOpen = true"
+        >
+          <Icon name="lucide:sliders-horizontal" class="size-4 shrink-0 text-cyan-400" aria-hidden="true" />
+          Plan
+        </button>
 
         <div
           class="order-1 flex min-h-[min(42vh,520px)] w-full min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/40 shadow-[0_0_40px_rgba(34,211,238,0.08)] backdrop-blur-sm max-lg:min-h-0 max-lg:flex-1 max-lg:rounded-none max-lg:border-0 max-lg:shadow-none sm:min-h-[320px] lg:order-2 lg:min-h-[min(70vh,560px)]"

@@ -79,7 +79,7 @@ function onSchoolSelect(p: { lngLat: { lng: number; lat: number }; label: string
         <Icon name="lucide:map-pinned" class="size-4 shrink-0 text-cyan-400" aria-hidden="true" />
         Locations
       </h2>
-      <p class="mt-1 text-xs leading-relaxed text-slate-400">
+      <p class="mt-1 text-xs leading-relaxed text-slate-200">
         Set the home you are evaluating. Optionally add work and school. We pick up to {{ GROCERY_ANCHOR_CAP }} nearby groceries (within ~{{ GROCERY_MAX_DISTANCE_KM }} km straight-line), plus a gas station, pharmacy, gym, and social spot
         (restaurant, pub, or café) automatically.
       </p>
@@ -87,24 +87,24 @@ function onSchoolSelect(p: { lngLat: { lng: number; lat: number }; label: string
 
     <div :class="embedded ? 'space-y-4' : 'mt-5 space-y-5'">
       <template v-if="readonly">
-        <p v-if="props.embedded" class="text-xs text-slate-400">
+        <p v-if="props.embedded" class="text-xs text-slate-300">
           View only — edit locations on <span class="font-medium text-cyan-200/90">Plan &amp; map</span>.
         </p>
         <dl class="space-y-3 text-sm">
           <div>
-            <dt class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Candidate home</dt>
+            <dt class="text-[11px] font-medium uppercase tracking-wide text-slate-400">Candidate home</dt>
             <dd class="mt-1 text-slate-100">
               {{ homeLocationLine ?? '—' }}
             </dd>
           </div>
           <div v-if="workPlace">
-            <dt class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Work</dt>
+            <dt class="text-[11px] font-medium uppercase tracking-wide text-slate-400">Work</dt>
             <dd class="mt-1 text-slate-100">
               {{ workPlace.address?.trim() || workPlace.label }}
             </dd>
           </div>
           <div v-if="schoolPlace">
-            <dt class="text-[11px] font-medium uppercase tracking-wide text-slate-500">School</dt>
+            <dt class="text-[11px] font-medium uppercase tracking-wide text-slate-400">School</dt>
             <dd class="mt-1 text-slate-100">
               {{ schoolPlace.address?.trim() || schoolPlace.label }}
             </dd>
@@ -120,7 +120,7 @@ function onSchoolSelect(p: { lngLat: { lng: number; lat: number }; label: string
             :proximity="null"
             @select="onHomeSelect"
           />
-          <p v-if="homeLocationLine" class="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <p v-if="homeLocationLine" class="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-300">
             <span class="font-medium text-slate-200">Selected:</span>
             <span class="max-w-full truncate">{{ homeLocationLine }}</span>
             <button
@@ -131,7 +131,7 @@ function onSchoolSelect(p: { lngLat: { lng: number; lat: number }; label: string
               Clear home
             </button>
           </p>
-          <p class="mt-1 text-[11px] text-slate-500">
+          <p class="mt-1 text-[11px] leading-snug text-slate-300">
             Or click the map and choose Home, Work, or School (each location once).
           </p>
         </div>
@@ -171,14 +171,14 @@ function onSchoolSelect(p: { lngLat: { lng: number; lat: number }; label: string
             />
             {{ discoveringPois ? 'Refreshing…' : 'Refresh nearby places' }}
           </button>
-          <span v-if="discoveringPois" class="text-xs text-slate-500">Finding groceries, gas, pharmacy, gym, and social…</span>
+          <span v-if="discoveringPois" class="text-xs text-slate-400">Finding groceries, gas, pharmacy, gym, and social…</span>
         </div>
 
         <p v-if="poiDiscoverError" class="text-xs text-red-400">{{ poiDiscoverError }}</p>
       </template>
 
       <div v-if="anchors.length" class="rounded-lg border border-slate-700/80 bg-slate-950/50 p-3">
-        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Places in score</p>
+        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-400">Places in score</p>
         <ul class="mt-2 space-y-2">
           <li
             v-for="a in anchors"
@@ -192,18 +192,18 @@ function onSchoolSelect(p: { lngLat: { lng: number; lat: number }; label: string
               </span>
               <span
                 v-if="a.addressSubtitle"
-                class="truncate pl-[22px] text-[10px] leading-snug text-slate-500"
+                class="truncate pl-[22px] text-[10px] leading-snug text-slate-400"
               >
                 {{ a.addressSubtitle }}
               </span>
             </span>
-            <span class="rounded-full border border-slate-600 bg-slate-900/80 px-2 py-0.5 text-[10px] text-slate-400">
+            <span class="rounded-full border border-slate-600 bg-slate-900/80 px-2 py-0.5 text-[10px] text-slate-300">
               {{ categoryLabels[a.category] }} · importance {{ a.weight }}
             </span>
           </li>
         </ul>
       </div>
-      <p v-else-if="candidateHome && !discoveringPois && !anchors.length" class="text-xs text-slate-500">
+      <p v-else-if="candidateHome && !discoveringPois && !anchors.length" class="text-xs text-slate-300">
         <template v-if="readonly">No places listed for this score.</template>
         <template v-else>
           No places yet. Set a home on the map first, or tap Refresh nearby places after your home is set.

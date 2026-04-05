@@ -78,22 +78,22 @@ function clearField() {
 <template>
   <div class="relative space-y-1.5">
     <div class="flex items-center justify-between gap-2">
-      <label class="text-xs font-medium text-slate-300">{{ label }}</label>
-      <span v-if="optional" class="text-[10px] uppercase tracking-wide text-slate-500">Optional</span>
+      <label class="text-xs font-semibold text-slate-100">{{ label }}</label>
+      <span v-if="optional" class="text-[10px] font-medium uppercase tracking-wide text-slate-300">Optional</span>
     </div>
     <div class="relative">
       <div class="flex gap-2">
         <div class="relative min-w-0 flex-1">
           <Icon
             name="lucide:search"
-            class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500"
+            class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-300"
             aria-hidden="true"
           />
           <input
             v-model="query"
             type="text"
             :disabled="!hasToken"
-            class="w-full rounded-lg border border-slate-600 bg-slate-950/60 py-2 pl-9 pr-3 text-sm text-slate-100 outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+            class="w-full rounded-lg border border-slate-500 bg-slate-950 py-2 pl-9 pr-3 text-sm text-slate-50 outline-none ring-0 placeholder:text-slate-300 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-60"
             :placeholder="placeholder"
             autocomplete="off"
           >
