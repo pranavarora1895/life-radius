@@ -9,7 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "pages:dev": "npx wrangler pages dev dist",
-    "pages:deploy": "npx wrangler pages deploy dist"
+    "pages:deploy": "npx wrangler pages deploy dist",
+    "worker:deploy": "nuxt build && wrangler deploy"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.101",
@@ -20,6 +21,7 @@
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
+    "wrangler": "^4.0.0",
     "@nuxt/kit": "^3.21.2",
     "@nuxtjs/tailwindcss": "^6.13.1",
     "@types/mapbox-gl": "^3.4.1",
