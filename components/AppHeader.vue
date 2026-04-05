@@ -12,7 +12,9 @@ const onReset = inject(lifeRadiusResetKey, null)
       class="pointer-events-none absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-transparent to-violet-500/5"
       aria-hidden="true"
     />
-    <div class="relative flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-3.5">
+    <div
+      class="relative flex w-full min-w-0 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-3.5 lg:px-5 xl:px-6 2xl:px-8"
+    >
       <div class="min-w-0 flex-1">
         <h1 class="flex items-center gap-2 text-lg font-semibold tracking-tight text-white sm:text-xl">
           <Icon

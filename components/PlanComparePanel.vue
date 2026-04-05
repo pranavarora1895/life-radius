@@ -48,6 +48,17 @@ function pal(index: number) {
 
 const categories = computed(() => categoriesPresentInSnapshots(props.snapshots))
 
+/** Match grid columns to plan count so two plans don’t sit in a 3-col row with empty space on the right. */
+function comparePlansGridClass(gapClass: 'gap-4' | 'gap-8') {
+  const n = props.snapshots.length
+  const base =
+    n >= 3 ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid grid-cols-1 sm:grid-cols-2'
+  return `${base} ${gapClass}`
+}
+
+const compareCardsGridClass = computed(() => comparePlansGridClass('gap-4'))
+const compareDonutsGridClass = computed(() => comparePlansGridClass('gap-8'))
+
 function weightedFor(snapshot: PlanCompareSnapshot, category: AnchorCategory) {
   const row = snapshot.byCategory.find((r: PlanCompareCategoryRow) => r.category === category)
   return row?.weightedSum ?? 0
@@ -249,7 +260,7 @@ function vBarX(index: number, total: number) {
           At a glance
           <span class="font-normal normal-case text-slate-600">· Life Score and quick stats</span>
         </h3>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div :class="compareCardsGridClass">
           <article
             v-for="(sn, si) in snapshots"
             :key="`hero-${sn.planId}`"
@@ -325,14 +336,14 @@ function vBarX(index: number, total: number) {
             <Icon name="lucide:pie-chart" class="size-5 text-fuchsia-400" aria-hidden="true" />
             What moves each score
           </h3>
-          <p class="mt-1 max-w-2xl text-sm text-slate-300">
+          <p class="mt-1 w-full max-w-none text-pretty text-sm leading-relaxed text-slate-300">
             Each ring is the full errand load for that home. Bigger slices mean more of the hassle comes from that kind of
             trip. Several grocery stops are combined into one grocery share; the small chart under each home splits
             groceries by store when there’s more than one.
           </p>
         </div>
 
-        <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div :class="compareDonutsGridClass">
           <div
             v-for="(sn, si) in snapshots"
             :key="`donut-${sn.planId}`"
@@ -411,7 +422,7 @@ function vBarX(index: number, total: number) {
             <Icon name="lucide:radar" class="size-5 text-sky-400" aria-hidden="true" />
             Errands by type
           </h3>
-          <p class="mt-1 max-w-2xl text-sm leading-relaxed text-slate-300">
+          <p class="mt-1 w-full max-w-none text-pretty text-sm leading-relaxed text-slate-300">
             Each corner is a trip type. Farther from the middle means more of the comparison’s hassle on that home for that
             kind of errand. Touching the outer ring means a tie for the heaviest load here.
           </p>

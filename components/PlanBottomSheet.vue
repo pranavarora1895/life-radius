@@ -20,9 +20,13 @@ function recomputeMax() {
   sheetHeight.value = clamp(sheetHeight.value, PEEK_MIN, maxSheetPx.value)
 }
 
-const isExpanded = computed(
-  () => sheetHeight.value >= maxSheetPx.value - 12,
-)
+/** True when the sheet is at (or near) full height — relaxed so Expand/Collapse stays in sync after drag/snap. */
+const isExpanded = computed(() => {
+  const max = maxSheetPx.value
+  if (max <= PEEK_MIN + 1) return false
+  const h = sheetHeight.value
+  return h >= max - 40 || h / max >= 0.9
+})
 
 function snapHeight(h: number) {
   const max = maxSheetPx.value
@@ -92,18 +96,28 @@ function collapseToPeek() {
   >
     <div
       data-sheet-handle
-      class="flex shrink-0 cursor-grab touch-none flex-col items-center gap-1 border-b border-slate-800/90 bg-slate-900/95 py-2.5 active:cursor-grabbing"
-      @pointerdown="onHandlePointerDown"
+      class="flex shrink-0 flex-col border-b border-slate-800/90 bg-slate-900/95"
     >
-      <div class="h-1 w-11 shrink-0 rounded-full bg-slate-500/90" aria-hidden="true" />
-      <div class="flex w-full items-center justify-between gap-2 px-4">
-        <p class="text-xs font-semibold text-slate-200">Locations &amp; travel</p>
+      <div
+        class="flex cursor-grab touch-none flex-col items-center gap-1 py-2.5 active:cursor-grabbing"
+        @pointerdown="onHandlePointerDown"
+      >
+        <div class="h-1 w-11 shrink-0 rounded-full bg-slate-500/90" aria-hidden="true" />
+      </div>
+      <div class="flex w-full items-center justify-between gap-2 px-4 pb-2.5 pt-0.5">
+        <div
+          class="min-w-0 flex-1 cursor-grab py-1 active:cursor-grabbing"
+          @pointerdown="onHandlePointerDown"
+        >
+          <p class="text-xs font-semibold text-slate-200">Locations &amp; travel</p>
+        </div>
         <button
           type="button"
-          class="rounded-md px-2 py-1 text-[11px] font-medium text-cyan-400/90 hover:bg-slate-800/80"
+          class="touch-manipulation rounded-md px-2 py-1 text-[11px] font-medium text-cyan-400/90 hover:bg-slate-800/80"
+          @pointerdown.stop
           @click.stop="isExpanded ? collapseToPeek() : expand()"
         >
-          {{ isExpanded ? 'Minimize' : 'Expand' }}
+          {{ isExpanded ? 'Collapse' : 'Expand' }}
         </button>
       </div>
     </div>

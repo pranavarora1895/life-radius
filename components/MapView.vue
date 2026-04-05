@@ -121,7 +121,7 @@ const mapboxContainerRef = ref<HTMLDivElement | null>(null)
 const pickPrompt = ref<PickPromptState | null>(null)
 /** Narrow viewports need smaller fitBounds padding so routes stay visible without excessive zoom-out. */
 const narrowScreen = ref(false)
-/** `lg` breakpoint — legend stays expanded; below `lg` it can collapse. */
+/** Below `lg`, the map legend can collapse to free space; desktop keeps it open. */
 const isLgViewport = ref(true)
 const mobileLegendExpanded = ref(true)
 
@@ -522,6 +522,7 @@ onMounted(async () => {
   await nextTick()
   if (!mapboxContainerRef.value || !props.mapboxToken) return
   updateNarrowScreen()
+  if (!isLgViewport.value) mobileLegendExpanded.value = false
   setAccessToken()
   const initial = boundsFromAnchors()
   const initialStyle = 'mapbox://styles/mapbox/streets-v12' as const
@@ -889,6 +890,19 @@ onBeforeUnmount(() => {
           <span class="hidden sm:inline">When off, click a colored pin to show its name and address; click the map to hide it again.</span>
         </p>
       </div>
+      <button
+        v-if="!isLgViewport"
+        type="button"
+        class="pointer-events-auto flex w-full items-center justify-center gap-1.5 rounded-lg border border-cyan-500/25 bg-slate-900/95 px-2.5 py-2 text-[10px] font-semibold uppercase tracking-wide text-slate-300 shadow-lg shadow-black/30 backdrop-blur-md sm:px-3"
+        @click="mobileLegendExpanded = false"
+      >
+        <Icon
+          name="lucide:chevron-up"
+          class="size-4 shrink-0 text-slate-400"
+          aria-hidden="true"
+        />
+        Hide legend
+      </button>
       </div>
     </div>
     <p

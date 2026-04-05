@@ -135,13 +135,14 @@ provide(lifeRadiusResetKey, resetAndGoPlan)
     <AppHeader :class="activeTab === 'plan' ? 'max-lg:hidden' : ''" />
     <main class="relative flex min-h-0 flex-1 flex-col max-lg:min-h-[100dvh]">
       <div
-        class="flex shrink-0 flex-col gap-2 border-b border-slate-800/90 bg-slate-900/90 px-4 py-2 backdrop-blur-xl lg:px-6"
+        class="flex shrink-0 flex-col gap-2 border-b border-slate-800/90 bg-slate-900/90 py-2 backdrop-blur-xl"
         :class="
           activeTab === 'plan'
             ? 'max-lg:fixed max-lg:left-0 max-lg:right-0 max-lg:top-0 max-lg:z-50 max-lg:bg-slate-900/95 max-lg:pt-[max(0.35rem,env(safe-area-inset-top))] max-lg:backdrop-blur-xl'
             : ''
         "
       >
+        <div class="flex w-full min-w-0 flex-col gap-2 px-4 lg:px-5 xl:px-6 2xl:px-8">
         <div
           v-if="activeTab === 'plan'"
           class="flex max-lg:mb-0.5 max-lg:w-full max-lg:items-center max-lg:justify-between lg:hidden"
@@ -240,12 +241,12 @@ provide(lifeRadiusResetKey, resetAndGoPlan)
 
         <div
           v-if="plans.length"
-          class="flex flex-wrap items-center gap-2 border-t border-slate-800/60 pt-2"
+          class="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-slate-800/60 pt-2 sm:gap-x-4"
           role="group"
           aria-label="Active plan"
         >
-          <span class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Plans</span>
-          <div class="flex flex-wrap items-center gap-1.5">
+          <span class="shrink-0 text-[11px] font-medium uppercase tracking-wide text-slate-500">Plans</span>
+          <div class="flex min-w-0 flex-wrap items-center gap-1.5">
             <div
               v-for="s in plans"
               :key="s.id"
@@ -286,7 +287,7 @@ provide(lifeRadiusResetKey, resetAndGoPlan)
               </button>
             </div>
           </div>
-          <label class="flex min-w-0 w-full flex-1 items-center gap-2 sm:ml-auto sm:max-w-xs">
+          <label class="flex min-w-[12rem] max-w-xs shrink-0 items-center gap-2 sm:min-w-[14rem]">
             <span class="shrink-0 text-[11px] text-slate-500">Name</span>
             <input
               :value="activePlanLabel"
@@ -298,14 +299,15 @@ provide(lifeRadiusResetKey, resetAndGoPlan)
             />
           </label>
         </div>
+        </div>
       </div>
 
       <!-- Plan & map: full-screen map + bottom sheet on mobile; sidebar + map on lg+. -->
       <div
         v-if="activeTab === 'plan'"
-        class="mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-4 max-lg:fixed max-lg:inset-0 max-lg:z-10 max-lg:m-0 max-lg:max-w-none max-lg:gap-0 max-lg:p-0 lg:flex-row lg:items-stretch lg:gap-5 lg:p-6"
+        class="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-4 max-lg:fixed max-lg:inset-0 max-lg:z-10 max-lg:m-0 max-lg:max-w-none max-lg:gap-0 max-lg:p-0 lg:flex-row lg:items-stretch lg:gap-4 lg:p-5 xl:p-6 2xl:px-8"
       >
-        <aside class="order-2 hidden w-full shrink-0 flex-col gap-3 lg:order-1 lg:flex lg:max-w-[20rem]">
+        <aside class="order-2 hidden w-full shrink-0 flex-col gap-3 lg:order-1 lg:flex lg:max-w-[22rem]">
           <PlanControlsPanel />
         </aside>
 
@@ -314,7 +316,7 @@ provide(lifeRadiusResetKey, resetAndGoPlan)
         </PlanBottomSheet>
 
         <div
-          class="order-1 flex min-h-[min(42vh,520px)] w-full flex-1 flex-col overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/40 shadow-[0_0_40px_rgba(34,211,238,0.08)] backdrop-blur-sm max-lg:min-h-0 max-lg:flex-1 max-lg:rounded-none max-lg:border-0 max-lg:shadow-none sm:min-h-[320px] lg:order-2 lg:min-h-[min(70vh,560px)]"
+          class="order-1 flex min-h-[min(42vh,520px)] w-full min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-cyan-500/25 bg-slate-900/40 shadow-[0_0_40px_rgba(34,211,238,0.08)] backdrop-blur-sm max-lg:min-h-0 max-lg:flex-1 max-lg:rounded-none max-lg:border-0 max-lg:shadow-none sm:min-h-[320px] lg:order-2 lg:min-h-[min(70vh,560px)]"
         >
           <div class="relative min-h-0 flex-1 bg-slate-950/80 max-lg:absolute max-lg:inset-0">
             <MapView
@@ -343,7 +345,7 @@ provide(lifeRadiusResetKey, resetAndGoPlan)
       <!-- Life score: two cards on top, dashboard below (only this tab) -->
       <div
         v-else-if="activeTab === 'results'"
-        class="mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 pb-[max(2rem,env(safe-area-inset-bottom))] sm:gap-4 sm:p-4 lg:gap-5 lg:p-6"
+        class="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-3 pb-[max(2rem,env(safe-area-inset-bottom))] sm:gap-4 sm:p-4 lg:gap-4 lg:p-5 xl:p-6 2xl:px-8"
       >
         <div class="grid min-h-0 grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2 lg:gap-5 lg:items-stretch">
           <article
@@ -505,7 +507,7 @@ provide(lifeRadiusResetKey, resetAndGoPlan)
       <!-- Compare: all scored plans -->
       <div
         v-else-if="activeTab === 'compare'"
-        class="mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 pb-[max(2rem,env(safe-area-inset-bottom))] sm:gap-4 sm:p-4 lg:gap-5 lg:p-6"
+        class="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-3 pb-[max(2rem,env(safe-area-inset-bottom))] sm:gap-4 sm:p-4 lg:gap-4 lg:p-5 xl:p-6 2xl:px-8"
       >
         <section
           class="rounded-2xl border border-violet-500/25 bg-slate-950/90 p-5 shadow-[0_0_40px_rgba(139,92,246,0.08)] backdrop-blur-sm sm:p-6"
