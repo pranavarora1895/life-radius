@@ -1,14 +1,33 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 // Build output: `dist/` (cloudflare-pages preset). Deploy: `npm run pages:deploy` (Pages) or `npm run worker:deploy` (Workers + assets; see wrangler.jsonc).
 import { fileURLToPath } from 'node:url'
+import { SITE_DESCRIPTION, SITE_TITLE } from './constants/seo'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-01-15',
   app: {
     head: {
+      title: SITE_TITLE,
       htmlAttrs: {
         class: 'dark',
+        lang: 'en',
       },
+      meta: [
+        { name: 'description', content: SITE_DESCRIPTION },
+        { name: 'application-name', content: 'Life Radius' },
+        { name: 'author', content: 'Life Radius' },
+        { name: 'robots', content: 'index, follow' },
+        { name: 'theme-color', content: '#020617' },
+        { name: 'color-scheme', content: 'dark' },
+        { property: 'og:title', content: SITE_TITLE },
+        { property: 'og:description', content: SITE_DESCRIPTION },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:site_name', content: 'Life Radius' },
+        { property: 'og:locale', content: 'en_US' },
+        { name: 'twitter:card', content: 'summary' },
+        { name: 'twitter:title', content: SITE_TITLE },
+        { name: 'twitter:description', content: SITE_DESCRIPTION },
+      ],
     },
   },
   devtools: { enabled: true },
