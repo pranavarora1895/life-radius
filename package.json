@@ -7,7 +7,9 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "pages:dev": "npx wrangler pages dev dist",
+    "pages:deploy": "npx wrangler pages deploy dist"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.101",

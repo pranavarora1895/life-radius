@@ -1,5 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-// Build output: `.output/` — deploy the Nuxt Cloudflare preset build to Cloudflare Pages.
+// Build output: `dist/` (cloudflare-pages preset). Deploy with `npx wrangler pages deploy dist`, not `wrangler deploy`.
 import { fileURLToPath } from 'node:url'
 
 export default defineNuxtConfig({

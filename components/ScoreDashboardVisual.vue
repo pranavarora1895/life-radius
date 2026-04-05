@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AnchorCategory, ScoreDashboardLeg, TravelMode } from '~/types'
 import { categoryIconName } from '~/utils/categoryIcons'
+import { buildDonutPaths, CATEGORY_HEX, GROCERY_SUNBURST_SHADES, type BurdenSlice } from '~/utils/compareCharts'
 import { formatYearlyTravelCompact } from '~/utils/scoreExplain'
 
 const props = withDefaults(
@@ -40,14 +41,57 @@ const maxMinutes = computed(() => {
   return m > 0 ? m : 1
 })
 
-const maxAffect = computed(() => {
-  const m = Math.max(0, ...props.legs.map((l: ScoreDashboardLeg) => l.weighted ?? 0))
-  return m > 0 ? m : 1
-})
-
 function sharePct(w: number | null): number {
   if (w == null || props.totalBurden <= 0) return 0
   return Math.round((w / props.totalBurden) * 100)
+}
+
+/** Legs that contribute weighted burden (same filter as donut / mix bar). */
+const legsForDonut = computed(() =>
+  props.legs.filter((l) => l.weighted != null && l.weighted > 0 && !l.error),
+)
+
+const legBurdenSlices = computed((): BurdenSlice[] => {
+  const t = props.totalBurden
+  if (t <= 0) return []
+  const groceryCount = legsForDonut.value.filter((l) => l.category === 'grocery').length
+  let groceryOrdinal = 0
+  return legsForDonut.value.map((l) => {
+    const isGrocery = l.category === 'grocery'
+    const color = isGrocery
+      ? groceryCount > 1
+        ? GROCERY_SUNBURST_SHADES[groceryOrdinal++ % GROCERY_SUNBURST_SHADES.length]!
+        : CATEGORY_HEX.grocery
+      : CATEGORY_HEX[l.category] ?? CATEGORY_HEX.custom
+    return {
+      category: l.category,
+      weight: l.weighted as number,
+      pct: ((l.weighted as number) / t) * 100,
+      color,
+      label: l.name,
+    }
+  })
+})
+
+/** Match Compare tab donut geometry. */
+const donutR = { inner: 38, outer: 62 }
+const donutBox = 150
+
+const donutPathsForLegs = computed(() =>
+  buildDonutPaths(legBurdenSlices.value, donutBox / 2, donutBox / 2, donutR.inner, donutR.outer),
+)
+
+/** Legend swatch: matches donut slices (several groceries → distinct green wedges). */
+function donutLegendColor(leg: ScoreDashboardLeg, indexInDonutList: number): string {
+  if (leg.category !== 'grocery') return CATEGORY_HEX[leg.category] ?? CATEGORY_HEX.custom
+  const list = legsForDonut.value
+  const groceryCount = list.filter((x) => x.category === 'grocery').length
+  if (groceryCount <= 1) return CATEGORY_HEX.grocery
+  let g = 0
+  for (let i = 0; i < indexInDonutList; i++) {
+    if (list[i]?.category === 'grocery') g++
+  }
+  return GROCERY_SUNBURST_SHADES[g % GROCERY_SUNBURST_SHADES.length]!
 }
 
 function barPct(value: number | null, max: number): number {
@@ -408,8 +452,8 @@ function detourTier(factor: number | null): {
       </ul>
     </div>
 
-    <!-- Charts row -->
-    <div class="grid gap-6 lg:grid-cols-2">
+    <!-- Times (left) vs score impact (right) on large screens; stacked on small -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start lg:gap-7">
       <div class="rounded-2xl border border-cyan-500/20 bg-slate-950/85 p-5 backdrop-blur-xl sm:p-6">
         <div class="flex items-start gap-2">
           <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-cyan-500/15">
@@ -499,33 +543,74 @@ function detourTier(factor: number | null): {
             </p>
           </div>
         </div>
-        <ul class="mt-5 space-y-4" role="list">
-          <li v-for="leg in legs" :key="'w-' + leg.anchorId" class="space-y-1.5">
-            <div class="flex items-center justify-between gap-2 text-xs">
-              <span class="flex min-w-0 items-center gap-1.5 font-medium text-slate-200">
-                <Icon
-                  :name="categoryIconName(leg.category)"
-                  class="size-3.5 shrink-0 opacity-70"
-                  aria-hidden="true"
+
+        <!-- Donut: multiple grocery stops are separate wedges (green shades); legend matches -->
+        <div v-if="legBurdenSlices.length" class="mt-5 border-t border-violet-500/15 pt-5">
+          <div
+            class="flex w-full min-w-0 flex-col gap-5 rounded-xl border border-violet-500/10 bg-violet-950/20 p-4 sm:flex-row sm:items-center sm:gap-8 sm:p-5"
+          >
+            <div class="relative mx-auto shrink-0 sm:mx-0">
+              <svg
+                class="size-[150px] drop-shadow-[0_0_24px_rgba(139,92,246,0.2)]"
+                :viewBox="`0 0 ${donutBox} ${donutBox}`"
+                role="img"
+                aria-label="Share of total burden by place"
+              >
+                <circle
+                  :cx="donutBox / 2"
+                  :cy="donutBox / 2"
+                  :r="(donutR.inner + donutR.outer) / 2"
+                  fill="none"
+                  stroke="rgb(15 23 42 / 0.9)"
+                  :stroke-width="donutR.outer - donutR.inner + 4"
                 />
-                <span class="truncate">{{ leg.name }}</span>
-              </span>
-              <span v-if="leg.weighted == null" class="shrink-0 text-slate-500">—</span>
-              <span v-else class="shrink-0 text-right tabular-nums text-violet-200">
-                <span class="text-sm font-semibold">{{ sharePct(leg.weighted) }}%</span>
-                <span class="block text-[10px] font-normal opacity-70">of the total</span>
-              </span>
+                <path
+                  v-for="(p, pi) in donutPathsForLegs"
+                  :key="'move-donut-' + pi"
+                  :d="p.d"
+                  :fill="p.color"
+                  stroke="rgb(15 23 42)"
+                  stroke-width="1"
+                  opacity="0.95"
+                />
+                <text
+                  :x="donutBox / 2"
+                  :y="donutBox / 2 - 4"
+                  text-anchor="middle"
+                  class="fill-white text-lg font-bold tabular-nums"
+                >
+                  {{ lifeScore }}
+                </text>
+                <text
+                  :x="donutBox / 2"
+                  :y="donutBox / 2 + 12"
+                  text-anchor="middle"
+                  class="fill-slate-500 text-[9px] uppercase tracking-wide"
+                >
+                  life score
+                </text>
+              </svg>
             </div>
-            <div class="h-2.5 overflow-hidden rounded-full bg-slate-800">
-              <div
-                v-if="leg.weighted != null"
-                class="h-full rounded-full bg-gradient-to-r transition-all duration-500"
-                :class="categoryBarClass(leg.category)"
-                :style="{ width: barPct(leg.weighted, maxAffect) + '%' }"
-              />
-            </div>
-          </li>
-        </ul>
+            <ul class="min-w-0 flex-1 space-y-1.5 text-[11px] sm:pt-0.5">
+              <li
+                v-for="(leg, di) in legsForDonut"
+                :key="'donut-leg-' + leg.anchorId"
+                class="flex items-center justify-between gap-3"
+              >
+                <span class="flex min-w-0 items-center gap-2 text-slate-400">
+                  <span
+                    class="size-2.5 shrink-0 rounded-sm ring-1 ring-slate-700"
+                    :style="{ backgroundColor: donutLegendColor(leg, di) }"
+                  />
+                  <span class="break-words leading-snug">{{ leg.name }}</span>
+                </span>
+                <span class="shrink-0 tabular-nums font-medium text-slate-200">
+                  {{ sharePct(leg.weighted) }}%
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
 
